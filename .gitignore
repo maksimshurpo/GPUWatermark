@@ -1,0 +1,7 @@
+.idea
+.gradle
+build/
+GPUWatermark.iml
+local.properties
+app/.externalNativeBuild
+app/app.iml
