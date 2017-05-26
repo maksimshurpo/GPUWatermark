@@ -1,100 +1,116 @@
 package com.mshurpo.testview.gpu
 
+import android.annotation.SuppressLint
 import android.opengl.GLES20
 import com.mshurpo.testview.gpu.utils.TextureRotationUtil
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.util.ArrayList
 
 /**
  * Created by maksimsurpo on 5/21/17.
  */
 class GPUImageFilterGroup : GPUImageFilter {
 
-    protected var filters: List<GPUImageFilter>? = null
-    var mergedFilters: List<GPUImageFilter>? = null
+    protected var mFilters: MutableList<GPUImageFilter>? = null
+    protected var mMergedFilters: MutableList<GPUImageFilter>? = null
+    private var mFrameBuffers: IntArray? = null
+    private var mFrameBufferTextures: IntArray? = null
 
-    private var frameBuffer: IntArray? = null
-    private var frameBufferTexture: IntArray? = null
-
-    private val glCubeBuffer: FloatBuffer = ByteBuffer.allocateDirect(GPUImageRenderer.CUBE.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-
-    private val glTextureBuffer: FloatBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-
-    private var glTextureFlipBuffer: FloatBuffer
+    private val mGLCubeBuffer: FloatBuffer
+    private val mGLTextureBuffer: FloatBuffer
+    private val mGLTextureFlipBuffer: FloatBuffer
 
     constructor() : this(null)
 
-    constructor(filters: List<GPUImageFilter>?) {
-        this.filters = filters
-        if (this.filters == null) {
-            this.filters = ArrayList<GPUImageFilter>()
+    constructor(filters: MutableList<GPUImageFilter>?) {
+        mFilters = filters
+        if (mFilters == null) {
+            mFilters = java.util.ArrayList<GPUImageFilter>()
         } else {
             updateMergedFilters()
         }
-        glCubeBuffer.put(GPUImageRenderer.CUBE).position(0)
-        glTextureBuffer.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0)
 
-        val flipTextute = TextureRotationUtil.getRotation(Rotation.NORMAL, false, false)
-        glTextureFlipBuffer = ByteBuffer.allocateDirect(flipTextute.size * 4)
-        .order(ByteOrder.nativeOrder())
+        mGLCubeBuffer = ByteBuffer.allocateDirect(GPUImageRenderer.CUBE.size * 4)
+                .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
-        glTextureFlipBuffer.put(flipTextute).position(0)
+        mGLCubeBuffer.put(GPUImageRenderer.CUBE).position(0)
+
+        mGLTextureBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.size * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+        mGLTextureBuffer.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0)
+
+        val flipTexture = TextureRotationUtil.getRotation(Rotation.NORMAL, false, true)
+        mGLTextureFlipBuffer = ByteBuffer.allocateDirect(flipTexture.size * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+        mGLTextureFlipBuffer.put(flipTexture).position(0)
     }
 
-    fun addFilter(filter: GPUImageFilter) {
-        this.filters = this.filters?.plus(filter)
+    fun addFilter(aFilter: GPUImageFilter?) {
+        if (aFilter == null) {
+            return
+        }
+        mFilters!!.add(aFilter)
         updateMergedFilters()
     }
 
     override fun onInit() {
         super.onInit()
-        this.filters?.forEach {
-            it.init()
+        mFilters?.let {
+            for (filter in it) {
+                filter.init()
+            }
         }
     }
 
     override fun onDestroy() {
-        destroyFrameBuffer()
-        this.filters?.forEach { it.destroy() }
+        destroyFramebuffers()
+        mFilters?.let {
+            for (filter in it) {
+                filter.destroy()
+            }
+        }
+
         super.onDestroy()
     }
 
-    private fun destroyFrameBuffer() {
-        frameBufferTexture?.let {
-            GLES20.glDeleteTextures(it.size, it, 0)
-            frameBufferTexture = null
+    private fun destroyFramebuffers() {
+        if (mFrameBufferTextures != null) {
+            GLES20.glDeleteTextures(mFrameBufferTextures!!.size, mFrameBufferTextures, 0)
+            mFrameBufferTextures = null
         }
-        frameBuffer?.let {
-            GLES20.glDeleteFramebuffers(it.size, it, 0)
-            frameBuffer = null
+        if (mFrameBuffers != null) {
+            GLES20.glDeleteFramebuffers(mFrameBuffers!!.size, mFrameBuffers, 0)
+            mFrameBuffers = null
         }
     }
 
     override fun onOutputSizeChanged(width: Int, height: Int) {
         super.onOutputSizeChanged(width, height)
-        if (frameBuffer != null) {
-            destroyFrameBuffer()
+        if (mFilters == null) {
+            return
+        }
+        if (mFrameBuffers != null) {
+            destroyFramebuffers()
         }
 
-        var size = filters?.size ?: 0
+        var size = mFilters!!.size
         for (i in 0..size - 1) {
-            filters?.get(i)?.onOutputSizeChanged(width, height)
+            mFilters!![i].onOutputSizeChanged(width, height)
         }
 
-        if (mergedFilters != null && mergedFilters?.size ?: 0 > 0) {
-            size = mergedFilters?.size ?: 0
-            frameBuffer = IntArray(size - 1)
-            frameBufferTexture = IntArray(size - 1)
+        if (mMergedFilters != null && mMergedFilters!!.size > 0) {
+            size = mMergedFilters!!.size
+            mFrameBuffers = IntArray(size - 1)
+            mFrameBufferTextures = IntArray(size - 1)
 
             for (i in 0..size - 1 - 1) {
-                GLES20.glGenFramebuffers(1, frameBuffer, i)
-                GLES20.glGenTextures(1, frameBufferTexture, i)
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, frameBufferTexture!![i])
+                GLES20.glGenFramebuffers(1, mFrameBuffers, i)
+                GLES20.glGenTextures(1, mFrameBufferTextures, i)
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mFrameBufferTextures!![i])
                 GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
                         GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null)
                 GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
@@ -106,9 +122,9 @@ class GPUImageFilterGroup : GPUImageFilter {
                 GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
                         GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE.toFloat())
 
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffer!![i])
+                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFrameBuffers!![i])
                 GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0,
-                        GLES20.GL_TEXTURE_2D, frameBufferTexture!![i], 0)
+                        GLES20.GL_TEXTURE_2D, mFrameBufferTextures!![i], 0)
 
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
@@ -116,62 +132,62 @@ class GPUImageFilterGroup : GPUImageFilter {
         }
     }
 
-    override fun onDraw(textureId: Int, cubeBuffer: FloatBuffer, textureBuffer: FloatBuffer) {
+    @SuppressLint("WrongCall")
+    override fun onDraw(textureId: Int, cubeBuffer: FloatBuffer,
+               textureBuffer: FloatBuffer) {
         runPendingOnDrawTasks()
-        if (isInitialized.not() || frameBuffer == null || frameBufferTexture == null) {
+        if (!isInitialized || mFrameBuffers == null || mFrameBufferTextures == null) {
             return
         }
-
-        mergedFilters?.let {
-            var previosTexture = textureId
-            val size = it.size
-            it.forEachIndexed { i, item ->
+        if (mMergedFilters != null) {
+            val size = mMergedFilters!!.size
+            var previousTexture = textureId
+            for (i in 0..size - 1) {
+                val filter = mMergedFilters!!.get(i)
                 val isNotLast = i < size - 1
                 if (isNotLast) {
-                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffer!![i])
-                    GLES20.glClearColor(0F, 0F, 0F, 0F)
+                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFrameBuffers!![i])
+                    GLES20.glClearColor(0f, 0f, 0f, 0f)
                 }
 
                 if (i == 0) {
-                    item.onDraw(previosTexture, cubeBuffer, textureBuffer)
+                    filter.onDraw(previousTexture, cubeBuffer, textureBuffer)
                 } else if (i == size - 1) {
-                    val textureBuffer = if (size % 2 == 0) glTextureFlipBuffer else glTextureBuffer
-                    item.onDraw(previosTexture, glCubeBuffer, textureBuffer)
+                    filter.onDraw(previousTexture, mGLCubeBuffer, if (size % 2 == 0) mGLTextureFlipBuffer else mGLTextureBuffer)
                 } else {
-                    item.onDraw(previosTexture, glCubeBuffer, glTextureBuffer)
+                    filter.onDraw(previousTexture, mGLCubeBuffer, mGLTextureBuffer)
                 }
 
                 if (isNotLast) {
                     GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-                    previosTexture = frameBufferTexture!![i]
+                    previousTexture = mFrameBufferTextures!![i]
                 }
             }
         }
     }
 
     fun updateMergedFilters() {
-        if (filters == null) {
+        if (mFilters == null) {
             return
         }
 
-        if (mergedFilters == null) {
-            mergedFilters = ArrayList<GPUImageFilter>()
+        if (mMergedFilters == null) {
+            mMergedFilters = ArrayList<GPUImageFilter>()
         } else {
-            (mergedFilters as ArrayList<GPUImageFilter>).clear()
+            mMergedFilters!!.clear()
         }
 
         var filters: List<GPUImageFilter>?
-        for (filter in this.filters!!) {
+        for (filter in mFilters!!) {
             if (filter is GPUImageFilterGroup) {
                 filter.updateMergedFilters()
-                filters = filter.mergedFilters
+                filters = filter.mMergedFilters
                 if (filters == null || filters.isEmpty())
                     continue
-                mergedFilters = mergedFilters?.plus(filters)
+                mMergedFilters!!.addAll(filters)
                 continue
             }
-            mergedFilters = mergedFilters?.plus(filter)
+            mMergedFilters!!.add(filter)
         }
-
     }
 }

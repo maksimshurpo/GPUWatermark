@@ -29,10 +29,11 @@ class CameraLoader(val activity: Activity, val cameraHelper: CameraHelper, val g
         cameraInstance = getCameraInstance(id)
         cameraInstance?.let {
             val parameters = it.parameters
-            /*if (parameters.supportedFocusModes
-                    .contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+            if (parameters.supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
                 parameters.focusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE
-            }*/
+            }
+            parameters.setPreviewSize(640, 480)
+            parameters.setPictureSize(640, 480)
 
             it.parameters = parameters
 

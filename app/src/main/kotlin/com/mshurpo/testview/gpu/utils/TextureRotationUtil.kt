@@ -14,11 +14,12 @@ object TextureRotationUtil {
 
     fun getRotation(rotation: Rotation, flipHorizontal: Boolean,
                     flipVertical: Boolean): FloatArray {
-        var rotatedTex: FloatArray = when (rotation) {
-            Rotation.ROTATION_90 -> TEXTURE_ROTATED_90
-            Rotation.ROTATION_180 -> TEXTURE_ROTATED_180
-            Rotation.ROTATION_270 -> TEXTURE_ROTATED_270
-            else -> TEXTURE_NO_ROTATION
+        var rotatedTex: FloatArray
+        when (rotation) {
+            Rotation.ROTATION_90 -> rotatedTex = TEXTURE_ROTATED_90
+            Rotation.ROTATION_180 -> rotatedTex = TEXTURE_ROTATED_180
+            Rotation.ROTATION_270 -> rotatedTex = TEXTURE_ROTATED_270
+            else -> rotatedTex = TEXTURE_NO_ROTATION
         }
         if (flipHorizontal) {
             rotatedTex = floatArrayOf(flip(rotatedTex[0]), rotatedTex[1], flip(rotatedTex[2]), rotatedTex[3], flip(rotatedTex[4]), rotatedTex[5], flip(rotatedTex[6]), rotatedTex[7])

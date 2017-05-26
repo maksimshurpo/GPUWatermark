@@ -28,11 +28,12 @@ open class GPUImageTwoInputFilter : GPUImageFilter {
                 "}"
     }
 
-    var filterSecondTextureCoordinateAttribute: Int = 0
-    var filterInputTextureUniform2: Int = 0
-    var filterSourceTexture2 = OpenGLUtils.NO_TEXTURE
-    private lateinit var texture2CoordinatesBuffer: ByteBuffer
-    private lateinit var bitmap: Bitmap
+    var mFilterSecondTextureCoordinateAttribute: Int = 0
+    var mFilterInputTextureUniform2: Int = 0
+    var mFilterSourceTexture2 = OpenGLUtils.NO_TEXTURE
+    private var mTexture2CoordinatesBuffer: ByteBuffer? = null
+    private var mBitmap: Bitmap? = null
+
 
     constructor(fragmentShader: String) : this(VERTEX_SHADER, fragmentShader)
     constructor(vertexShader: String, fragmentShader: String) : super(vertexShader, fragmentShader) {
@@ -42,48 +43,47 @@ open class GPUImageTwoInputFilter : GPUImageFilter {
     override fun onInit() {
         super.onInit()
 
-        filterSecondTextureCoordinateAttribute = GLES20.glGetAttribLocation(glProgId, "inputTextureCoordinate2")
-        filterInputTextureUniform2 = GLES20.glGetUniformLocation(glProgId, "inputImageTexture2") // This does assume a name of "inputImageTexture2" for second input texture in the fragment shader
-        GLES20.glEnableVertexAttribArray(filterSecondTextureCoordinateAttribute)
+        mFilterSecondTextureCoordinateAttribute = GLES20.glGetAttribLocation(getProgram(), "inputTextureCoordinate2")
+        mFilterInputTextureUniform2 = GLES20.glGetUniformLocation(getProgram(), "inputImageTexture2") // This does assume a name of "inputImageTexture2" for second input texture in the fragment shader
+        GLES20.glEnableVertexAttribArray(mFilterSecondTextureCoordinateAttribute)
 
-        if (bitmap != null && !bitmap.isRecycled()) {
-            initBitmap(bitmap)
+        if (mBitmap != null && !mBitmap!!.isRecycled()) {
+            setBitmap(mBitmap)
         }
     }
 
-    fun initBitmap(bitmap: Bitmap) {
+    fun setBitmap(bitmap: Bitmap?) {
         if (bitmap != null && bitmap.isRecycled) {
             return
         }
-        this.bitmap = bitmap
-        if (this.bitmap == null) {
+        mBitmap = bitmap
+        if (mBitmap == null) {
             return
         }
         runOnDraw(Runnable {
-            if (filterSourceTexture2 == OpenGLUtils.NO_TEXTURE) {
+            if (mFilterSourceTexture2 == OpenGLUtils.NO_TEXTURE) {
                 if (bitmap == null || bitmap.isRecycled) {
                     return@Runnable
                 }
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE3)
-                filterSourceTexture2 = OpenGLUtils.loadTexture(bitmap, OpenGLUtils.NO_TEXTURE, false)
+                mFilterSourceTexture2 = OpenGLUtils.loadTexture(bitmap, OpenGLUtils.NO_TEXTURE, false)
             }
         })
     }
-
     override fun onDestroy() {
         super.onDestroy()
-        GLES20.glDeleteTextures(1, intArrayOf(filterSourceTexture2), 0)
-        filterSourceTexture2 = OpenGLUtils.NO_TEXTURE
+        GLES20.glDeleteTextures(1, intArrayOf(mFilterSourceTexture2), 0)
+        mFilterSourceTexture2 = OpenGLUtils.NO_TEXTURE
     }
 
     override fun onDrawArraysPre() {
-        GLES20.glEnableVertexAttribArray(filterSecondTextureCoordinateAttribute)
+        GLES20.glEnableVertexAttribArray(mFilterSecondTextureCoordinateAttribute)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE3)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, filterSourceTexture2)
-        GLES20.glUniform1i(filterInputTextureUniform2, 3)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mFilterSourceTexture2)
+        GLES20.glUniform1i(mFilterInputTextureUniform2, 3)
 
-        texture2CoordinatesBuffer.position(0)
-        GLES20.glVertexAttribPointer(filterSecondTextureCoordinateAttribute, 2, GLES20.GL_FLOAT, false, 0, texture2CoordinatesBuffer)
+        mTexture2CoordinatesBuffer!!.position(0)
+        GLES20.glVertexAttribPointer(mFilterSecondTextureCoordinateAttribute, 2, GLES20.GL_FLOAT, false, 0, mTexture2CoordinatesBuffer)
     }
 
     fun setRotation(rotation: Rotation, flipHorizontal: Boolean, flipVertical: Boolean) {
@@ -94,6 +94,6 @@ open class GPUImageTwoInputFilter : GPUImageFilter {
         fBuffer.put(buffer)
         fBuffer.flip()
 
-        texture2CoordinatesBuffer = bBuffer
+        mTexture2CoordinatesBuffer = bBuffer
     }
 }

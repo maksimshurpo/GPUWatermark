@@ -60,9 +60,11 @@ open class GPUImageFilter {
         glProgId = OpenGLUtils.loadProgram(vertexShader, fragmentShader)
         glAttribPosition = GLES20.glGetAttribLocation(glProgId, "position")
         glUniformTexture = GLES20.glGetUniformLocation(glProgId, "inputImageTexture")
-        glAttribTextureCoordinate = GLES20.glGetAttribLocation(glProgId, "inputTextureCoordinate")
+        glAttribTextureCoordinate = GLES20.glGetAttribLocation(glProgId,
+                "inputTextureCoordinate")
         isInitialized = true
     }
+
 
     fun destroy() {
         isInitialized = false
@@ -70,12 +72,11 @@ open class GPUImageFilter {
         onDestroy()
     }
 
-    open fun onDestroy() {
-    }
+    open fun onDestroy() {}
 
     open fun onOutputSizeChanged(width: Int, height: Int) {
-        outputWidth = width
-        outputHeight = height
+        this.outputWidth = width
+        this.outputHeight = height
     }
 
     open fun onDraw(textureId: Int, cubeBuffer: FloatBuffer,
@@ -105,17 +106,21 @@ open class GPUImageFilter {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
     }
 
-    open protected fun onDrawArraysPre() {
-    }
+    open protected fun onDrawArraysPre() {}
 
     protected fun runPendingOnDrawTasks() {
-        while (runOnDraw.isEmpty().not()) {
+        while (!runOnDraw.isEmpty()) {
             runOnDraw.removeFirst().run()
         }
     }
+
+    fun getProgram(): Int {
+        return glProgId
+    }
+
     protected fun runOnDraw(runnable: Runnable) {
-        synchronized(this.runOnDraw) {
-            this.runOnDraw.addLast(runnable)
+        synchronized(runOnDraw) {
+            runOnDraw.addLast(runnable)
         }
     }
 }
