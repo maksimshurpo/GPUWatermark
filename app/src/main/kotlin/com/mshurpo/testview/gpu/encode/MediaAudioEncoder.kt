@@ -73,7 +73,6 @@ class MediaAudioEncoder(muxer: MediaMuxerWrapper, listener: MediaEncoder.MediaEn
             } catch (e: Exception) {
                 Log.e(TAG, "prepare:", e)
             }
-
         }
     }
 
@@ -177,7 +176,8 @@ class MediaAudioEncoder(muxer: MediaMuxerWrapper, listener: MediaEncoder.MediaEn
         val SAMPLES_PER_FRAME = 1024    // AAC, bytes/frame/channel
         val FRAMES_PER_BUFFER = 25     // AAC, frame/buffer/sec
 
-        private val AUDIO_SOURCES = intArrayOf(MediaRecorder.AudioSource.MIC)//MediaRecorder.AudioSource.DEFAULT,
+        private val AUDIO_SOURCES = intArrayOf(MediaRecorder.AudioSource.MIC)
+        //MediaRecorder.AudioSource.DEFAULT,
         //MediaRecorder.AudioSource.CAMCORDER,
         //MediaRecorder.AudioSource.VOICE_COMMUNICATION,
         //MediaRecorder.AudioSource.VOICE_RECOGNITION,
@@ -199,6 +199,7 @@ class MediaAudioEncoder(muxer: MediaMuxerWrapper, listener: MediaEncoder.MediaEn
                 if (!codecInfo.isEncoder) {    // skipp decoder
                     continue
                 }
+
                 val types = codecInfo.supportedTypes
                 for (j in types.indices) {
                     if (DEBUG) Log.i(TAG, "supportedType:" + codecInfo.name + ",MIME=" + types[j])

@@ -87,7 +87,10 @@ open class GPUImageTwoInputFilter : GPUImageFilter {
     }
 
     fun setRotation(rotation: Rotation, flipHorizontal: Boolean, flipVertical: Boolean) {
-        val buffer = TextureRotationUtil.getRotation(rotation, flipHorizontal, flipVertical)
+        val buffer = floatArrayOf(
+                0.0f, 1.0f, 1.0f,
+                1.0f, 0.0f, 0.0f,
+                1.0f, 0.0f)//TextureRotationUtil.getRotation(rotation, flipHorizontal, flipVertical)
 
         val bBuffer = ByteBuffer.allocateDirect(32).order(ByteOrder.nativeOrder())
         val fBuffer = bBuffer.asFloatBuffer()

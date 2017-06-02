@@ -59,11 +59,12 @@ class CameraActivity : AppCompatActivity() {
                 isRecording = true
                 val recordFile: File? = getOutputMediaFile()
                 recordFile?.let {
-                    movieWriter.startRecording(it.absolutePath, 540, 540)
+                    movieWriter.startRecording(it.absolutePath, 480, 480)
                 }
                 btn_recording.text = "Start"
             }
         }
+
 
         val filters = GPUImageFilterGroup()
         val filter = createBlendFilter(this, GPUImageNormalBlendFilter::class.java)

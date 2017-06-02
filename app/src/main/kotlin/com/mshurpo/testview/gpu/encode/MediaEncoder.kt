@@ -273,7 +273,7 @@ abstract class MediaEncoder(
             Log.w(TAG, "muxer is unexpectedly null")
             return
         }
-        LOOP@ while (mIsCapturing) {
+        while (mIsCapturing) {
 
             try {
                 encoderStatus = mMediaCodec!!.dequeueOutputBuffer(mBufferInfo!!, TIMEOUT_USEC.toLong())
@@ -284,7 +284,7 @@ abstract class MediaEncoder(
             if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 if (!mIsEOS) {
                     if (++count > 5)
-                        break@LOOP
+                        break
                 }
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 if (DEBUG) Log.v(TAG, "INFO_OUTPUT_BUFFERS_CHANGED")

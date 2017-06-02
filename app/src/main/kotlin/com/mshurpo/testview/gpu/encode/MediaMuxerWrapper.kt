@@ -23,23 +23,16 @@ package com.mshurpo.testview.gpu.encode
  * All files in the folder are under this Apache License, Version 2.0.
 */
 
-import android.annotation.TargetApi
-import android.media.MediaCodec
-import android.media.MediaFormat
-import android.media.MediaMuxer
 import android.util.Log
 
 import java.io.IOException
 import java.nio.ByteBuffer
+import android.media.*
 
-@TargetApi(18)
+
 class MediaMuxerWrapper @Throws(IOException::class)
-constructor(
-        //private static final String DIR_NAME = "AVRecSample";
-        //private static final SimpleDateFormat mDateTimeFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.US);
-
-        private val mOutputPath: String) {
-    private val mMediaMuxer: MediaMuxer    // API >= 18
+constructor(mOutputPath: String) {
+    private val mMediaMuxer: MediaMuxer
     private var mEncoderCount: Int = 0
     private var mStatredCount: Int = 0
     @get:Synchronized var isStarted: Boolean = false
@@ -78,13 +71,11 @@ constructor(
         mAudioEncoder = null
     }
 
-    //**********************************************************************
-    //**********************************************************************
     /**
      * assign encoder to this calss. this is called from encoder.
      * @param encoder instance of MediaVideoEncoder or MediaAudioEncoder
      */
-    /*package*/ internal fun addEncoder(encoder: MediaEncoder) {
+    internal fun addEncoder(encoder: MediaEncoder) {
         if (encoder is MediaVideoEncoder) {
             if (mVideoEncoder != null)
                 throw IllegalArgumentException("Video encoder already added.")
@@ -102,7 +93,7 @@ constructor(
      * request start recording from encoder
      * @return true when muxer is ready to write
      */
-    /*package*/ @Synchronized internal fun start(): Boolean {
+    @Synchronized internal fun start(): Boolean {
         if (DEBUG) Log.v(TAG, "start:")
         mStatredCount++
         if (mEncoderCount > 0 && mStatredCount == mEncoderCount) {
@@ -117,7 +108,7 @@ constructor(
     /**
      * request stop recording from encoder when encoder received EOS
      */
-    /*package*/ @Synchronized internal fun stop(): Boolean {
+    @Synchronized internal fun stop(): Boolean {
         if (DEBUG) Log.v(TAG, "stop:mStatredCount=" + mStatredCount)
         mStatredCount--
         if (mEncoderCount > 0 && mStatredCount <= 0) {
@@ -136,7 +127,7 @@ constructor(
      * *
      * @return minus value indicate error
      */
-    /*package*/ @Synchronized internal fun addTrack(format: MediaFormat): Int {
+    @Synchronized internal fun addTrack(format: MediaFormat): Int {
         if (isStarted)
             throw IllegalStateException("muxer already started")
         val trackIx = mMediaMuxer.addTrack(format)
@@ -152,7 +143,7 @@ constructor(
      * *
      * @param bufferInfo
      */
-    /*package*/ @Synchronized internal fun writeSampleData(trackIndex: Int, byteBuf: ByteBuffer, bufferInfo: MediaCodec.BufferInfo) {
+    @Synchronized internal fun writeSampleData(trackIndex: Int, byteBuf: ByteBuffer, bufferInfo: MediaCodec.BufferInfo) {
         if (mStatredCount > 0)
             mMediaMuxer.writeSampleData(trackIndex, byteBuf, bufferInfo)
     }
@@ -169,7 +160,7 @@ constructor(
     }
 
     companion object {
-        private val DEBUG = false
+        private val DEBUG = true
         private val TAG = "MediaMuxerWrapper"
     }
 

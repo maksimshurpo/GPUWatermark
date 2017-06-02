@@ -34,10 +34,10 @@ import android.view.Surface
 import java.io.IOException
 
 @TargetApi(18)
-class MediaVideoEncoder(muxer: MediaMuxerWrapper, listener: MediaEncoder.MediaEncoderListener,
-        //private static final float BPP_LOW = 0.15f;
-
-                        private val mWidth: Int, private val mHeight: Int) : MediaEncoder(muxer, listener) {
+class MediaVideoEncoder(muxer: MediaMuxerWrapper,
+                        listener: MediaEncoder.MediaEncoderListener,
+                        private val mWidth: Int,
+                        private val mHeight: Int) : MediaEncoder(muxer, listener) {
     // private RenderHandler mRenderHandler;
     var surface: Surface? = null
         private set
